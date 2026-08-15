@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nocasta Mobile Review Reporter</title>
+    <title>Mobile Review Reporter</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -72,16 +72,6 @@
         tr.done { background-color: #e6f4ea; }
         tr.done td.link-col a { text-decoration: line-through; color: #1e7e34; }
         
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .badge-pending { background: #fff4e5; color: #b06000; }
-        .badge-done { background: #ceeed6; color: #0d652d; }
-        
         .btn-toggle {
             background: none;
             border: 1px solid #dadce0;
@@ -129,19 +119,17 @@
 </div>
 
 <script>
-    const rawCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuHNhXWNm6K7PGgRkI64Pu4pf0XhX6wnarnqf3y0-4OUR_790E9PWLzVrmjLPlEWeu3bHhMkBISXP3/pub?output=csv';
-    const sheetCsvUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(rawCsvUrl);
+    // URL CSV Langsung dari Google Sheets Publik (Tanpa Proxy)
+    const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuHNhXWNm6K7PGgRkI64Pu4pf0XhX6wnarnqf3y0-4OUR_790E9PWLzVrmjLPlEWeu3bHhMkBISXP3/pub?output=csv';
 
     let reviewLinks = [];
     const STORAGE_KEY = 'nocasta_reported_links';
 
-    // Memuat data ID link yang sudah di-report dari LocalStorage HP
     function getReportedFromStorage() {
         const stored = localStorage.getItem(STORAGE_KEY);
         return stored ? JSON.parse(stored) : [];
     }
 
-    // Menyimpan ID link yang di-report ke LocalStorage HP
     function saveReportedToStorage(urlList) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(urlList));
     }
@@ -151,7 +139,10 @@
         progressText.innerText = 'Mengambil data dari Spreadsheet...';
         
         try {
+            // Memanggil langsung URL Google Sheets CSV dengan penangkal cache
             const response = await fetch(sheetCsvUrl + '&_t=' + new Date().getTime());
+            if (!response.ok) throw new Error('Respon jaringan bermasalah.');
+
             const data = await response.text();
             
             const rows = data.split('\n');
@@ -164,7 +155,6 @@
                 if (match) {
                     const url = match[0].replace(/[\r\n"]/g, '').trim();
                     if (url) {
-                        // Cek apakah URL sudah tervalidasi di memori HP
                         const isDone = reportedUrls.includes(url);
                         reviewLinks.push({ id: no, url: url, status: isDone ? 'done' : 'pending' });
                         no++;
@@ -176,13 +166,19 @@
             updateProgress();
 
         } catch (error) {
-            progressText.innerText = 'Gagal memuat data. Periksa koneksi HP Anda.';
+            console.error(error);
+            progressText.innerText = 'Gagal memuat data. Sila tekan Muat Ulang Link.';
         }
     }
 
     function renderTable() {
         const tbody = document.querySelector('#reviewTable tbody');
         tbody.innerHTML = '';
+
+        if (reviewLinks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Tidak ada link ditemukan.</td></tr>';
+            return;
+        }
 
         reviewLinks.forEach((item, index) => {
             const tr = document.createElement('tr');
@@ -219,11 +215,9 @@
     }
 
     function toggleStatus(index) {
-        // Balikkan status (pending <-> done)
         const currentStatus = reviewLinks[index].status;
         reviewLinks[index].status = currentStatus === 'done' ? 'pending' : 'done';
 
-        // Simpan perubahan ke LocalStorage HP
         const reportedUrls = reviewLinks.filter(item => item.status === 'done').map(item => item.url);
         saveReportedToStorage(reportedUrls);
 
@@ -232,14 +226,10 @@
     }
 
     function bukaReportBerikutnya() {
-        // Cari antrean review pertama yang belum di-report
         const nextIndex = reviewLinks.findIndex(item => item.status === 'pending');
 
         if (nextIndex !== -1) {
-            // Ubah status menjadi 'done' (Tervalidasi)
             toggleStatus(nextIndex);
-            
-            // Buka link Google Maps
             window.open(reviewLinks[nextIndex].url, '_blank');
         } else {
             alert('Semua link review pada daftar sudah selesai dilaporkan!');
