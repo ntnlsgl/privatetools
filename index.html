@@ -1,250 +1,76 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile Review Reporter</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            padding: 15px; 
-            background-color: #f4f6f8; 
-            color: #333; 
-        }
-        .card { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-            margin-bottom: 15px;
-        }
-        h2 { color: #d93025; margin-top: 0; font-size: 20px; text-align: center; }
-        p { font-size: 13px; color: #666; line-height: 1.4; text-align: center; }
-        
-        .progress-box {
-            background: #e8f0fe;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            color: #174ea6;
-            margin-bottom: 15px;
-        }
-
-        .btn-main { 
-            width: 100%; 
-            padding: 16px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            background-color: #d93025; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(217, 48, 37, 0.3);
-            margin-bottom: 10px;
-        }
-        .btn-main:active { transform: scale(0.98); background-color: #b3261e; }
-        
-        .action-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-secondary {
-            flex: 1;
-            padding: 10px;
-            background: #f1f3f4;
-            color: #3c4043;
-            border: 1px solid #dadce0;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
-        th { background: #f8f9fa; }
-        
-        tr.done { background-color: #e6f4ea; }
-        tr.done td.link-col a { text-decoration: line-through; color: #1e7e34; }
-        
-        .btn-toggle {
-            background: none;
-            border: 1px solid #dadce0;
-            border-radius: 4px;
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Automated Link Report</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; }
+    .progress-bar { width: 100%; background: #eee; height: 20px; border-radius: 10px; overflow: hidden; margin: 15px 0; }
+    .progress-fill { width: 0%; height: 100%; background: #4caf50; transition: width 0.3s; }
+    #log { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+  </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Nocasta Mobile Reporter</h2>
-    <p>Buka tautan secara cepat dari HP. Klik tombol di bawah untuk membuka link ulasan satu per satu.</p>
-    
-    <div class="progress-box" id="progressText">
-        Memuat data...
-    </div>
+  <h3>Sistem Pelaporan Otomatis</h3>
+  <button id="startBtn" onclick="processReports()">Mulai Laporkan Semua Link</button>
 
-    <button class="btn-main" onclick="bukaReportBerikutnya()">
-        🔥 BUKA REVIEW SELANJUTNYA
-    </button>
-    
-    <div class="action-row">
-        <button class="btn-secondary" onclick="muatDataSpreadsheet()">🔄 Muat Ulang Link</button>
-        <button class="btn-secondary" onclick="resetValidasi()">🗑️ Reset Validasi HP</button>
-    </div>
-</div>
+  <div class="progress-bar">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+  <p id="statusText">Status: Siap</p>
 
-<div class="card">
-    <h3 style="margin-top:0; font-size: 15px;">Daftar Antrean Review</h3>
-    <table id="reviewTable">
-        <thead>
-            <tr>
-                <th style="width: 35px;">No</th>
-                <th>Link Review</th>
-                <th style="width: 100px; text-align:center;">Validasi</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="3" style="text-align:center;">Mengambil data...</td></tr>
-        </tbody>
-    </table>
-</div>
+  <div id="log"></div>
 
-<script>
-    // URL CSV Langsung dari Google Sheets Publik (Tanpa Proxy)
-    const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuHNhXWNm6K7PGgRkI64Pu4pf0XhX6wnarnqf3y0-4OUR_790E9PWLzVrmjLPlEWeu3bHhMkBISXP3/pub?output=csv';
+  <script>
+    // Daftar URL target yang ingin dilaporkan
+    const reportLinks = [
+      "https://www.google.com/local/content/rap/report/submit?t=1&postId=Ci9DQUlRQUNvZENodHljRjlvT2tSM1RYUkRORFUyVUU1VlFqQmtaV1pyY1U5SU1XYxAB&r=2&d=286732320",
+      // Tambahkan URL lainnya di sini
+    ];
 
-    let reviewLinks = [];
-    const STORAGE_KEY = 'nocasta_reported_links';
-
-    function getReportedFromStorage() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
+    async function sendReportRequest(url) {
+      // Fungsi simulasi/proxy request ke backend atau extension messaging
+      // Ganti URL fetch sesuai dengan endpoint backend proxy Anda jika ada
+      const response = await fetch(url, { method: 'GET', mode: 'no-cors' });
+      return response;
     }
 
-    function saveReportedToStorage(urlList) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(urlList));
-    }
+    async function processReports() {
+      const btn = document.getElementById('startBtn');
+      const progressFill = document.getElementById('progressFill');
+      const statusText = document.getElementById('statusText');
+      const log = document.getElementById('log');
 
-    async function muatDataSpreadsheet() {
-        const progressText = document.getElementById('progressText');
-        progressText.innerText = 'Mengambil data dari Spreadsheet...';
+      btn.disabled = true;
+      log.innerHTML = '';
+      
+      const total = reportLinks.length;
+
+      for (let i = 0; i < total; i++) {
+        const url = reportLinks[i];
+        statusText.innerText = `Memproses (${i + 1}/${total})...`;
         
         try {
-            // Memanggil langsung URL Google Sheets CSV dengan penangkal cache
-            const response = await fetch(sheetCsvUrl + '&_t=' + new Date().getTime());
-            if (!response.ok) throw new Error('Respon jaringan bermasalah.');
-
-            const data = await response.text();
-            
-            const rows = data.split('\n');
-            reviewLinks = [];
-            const reportedUrls = getReportedFromStorage();
-
-            let no = 1;
-            rows.forEach(row => {
-                const match = row.match(/https?:\/\/[^\s",]+/);
-                if (match) {
-                    const url = match[0].replace(/[\r\n"]/g, '').trim();
-                    if (url) {
-                        const isDone = reportedUrls.includes(url);
-                        reviewLinks.push({ id: no, url: url, status: isDone ? 'done' : 'pending' });
-                        no++;
-                    }
-                }
-            });
-
-            renderTable();
-            updateProgress();
-
+          await sendReportRequest(url);
+          log.innerHTML += `<div>✅ Sukses dilaporkan: Link #${i + 1}</div>`;
         } catch (error) {
-            console.error(error);
-            progressText.innerText = 'Gagal memuat data. Sila tekan Muat Ulang Link.';
-        }
-    }
-
-    function renderTable() {
-        const tbody = document.querySelector('#reviewTable tbody');
-        tbody.innerHTML = '';
-
-        if (reviewLinks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Tidak ada link ditemukan.</td></tr>';
-            return;
+          log.innerHTML += `<div>❌ Gagal: Link #${i + 1} (${error.message})</div>`;
         }
 
-        reviewLinks.forEach((item, index) => {
-            const tr = document.createElement('tr');
-            const isDone = item.status === 'done';
-            if (isDone) tr.className = 'done';
+        // Update progress bar
+        const percent = Math.round(((i + 1) / total) * 100);
+        progressFill.style.width = percent + '%';
 
-            tr.innerHTML = `
-                <td><b>${item.id}</b></td>
-                <td class="link-col"><a href="${item.url}" target="_blank" onclick="toggleStatus(${index})">Review ${item.id}</a></td>
-                <td style="text-align:center;">
-                    <button class="btn-toggle" onclick="toggleStatus(${index})">
-                        ${isDone ? '✅ Reported' : '⏳ Laporkan'}
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        // Jeda 1.5 detik antar request untuk menghindari rate limiting
+        await new Promise(res => setTimeout(res, 1500));
+      }
+
+      statusText.innerText = "Selesai! Semua link telah diproses.";
+      btn.disabled = false;
     }
-
-    function updateProgress() {
-        const progressText = document.getElementById('progressText');
-        const doneCount = reviewLinks.filter(item => item.status === 'done').length;
-        
-        if (reviewLinks.length === 0) {
-            progressText.innerText = 'Tidak ada antrean review.';
-            return;
-        }
-
-        if (doneCount === reviewLinks.length) {
-            progressText.innerText = '🎉 Semua review telah diproses!';
-        } else {
-            progressText.innerText = `Progres HP: ${doneCount} / ${reviewLinks.length} Selesai`;
-        }
-    }
-
-    function toggleStatus(index) {
-        const currentStatus = reviewLinks[index].status;
-        reviewLinks[index].status = currentStatus === 'done' ? 'pending' : 'done';
-
-        const reportedUrls = reviewLinks.filter(item => item.status === 'done').map(item => item.url);
-        saveReportedToStorage(reportedUrls);
-
-        renderTable();
-        updateProgress();
-    }
-
-    function bukaReportBerikutnya() {
-        const nextIndex = reviewLinks.findIndex(item => item.status === 'pending');
-
-        if (nextIndex !== -1) {
-            toggleStatus(nextIndex);
-            window.open(reviewLinks[nextIndex].url, '_blank');
-        } else {
-            alert('Semua link review pada daftar sudah selesai dilaporkan!');
-        }
-    }
-
-    function resetValidasi() {
-        if (confirm('Apakah Anda yakin ingin menghapus seluruh tanda validasi di HP ini?')) {
-            localStorage.removeItem(STORAGE_KEY);
-            muatDataSpreadsheet();
-        }
-    }
-
-    window.onload = muatDataSpreadsheet;
-</script>
-
+  </script>
 </body>
 </html>
