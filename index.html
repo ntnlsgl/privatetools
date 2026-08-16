@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Review Remover</title>
+    <title>Report Dashboard - Realtime</title>
     <!-- Import PapaParse untuk membaca CSV dari Spreadsheet -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
@@ -62,17 +62,11 @@
             margin-bottom: 30px;
         }
 
-        /* Table Styles */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-
+        /* Table Styles - Desktop */
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            min-width: 600px; 
         }
 
         th, td {
@@ -128,11 +122,59 @@
             background-color: var(--btn-clicked);
         }
 
-        /* Mobile adjustments */
-        @media (max-width: 600px) {
+        /* Responsive Mobile Layout (Card Style) */
+        @media (max-width: 768px) {
             h1 { font-size: 2rem; }
-            .container { margin-top: 20px; }
-            th, td { padding: 12px 10px; }
+            .container { margin-top: 10px; }
+            
+            /* Mengubah tabel menjadi bentuk blok/kartu */
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            
+            /* Sembunyikan header tabel di mobile */
+            thead tr {
+                display: none;
+            }
+            
+            /* Desain kartu untuk setiap baris */
+            tr {
+                margin-bottom: 15px;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 10px 15px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            }
+            
+            tr:last-child {
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            /* Desain sel data dalam kartu */
+            td {
+                display: flex;
+                justify-content: space-between; /* Membuat label dan isi terpisah kiri-kanan */
+                align-items: center;
+                border-bottom: 1px solid #f0f0f0;
+                padding: 12px 0;
+                text-align: right;
+            }
+            
+            td:last-child {
+                border-bottom: none;
+                padding-bottom: 5px;
+            }
+            
+            /* Memunculkan label header menggunakan CSS pseudo-element berdasarkan atribut data-label */
+            td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                text-align: left;
+                margin-right: 15px;
+            }
         }
     </style>
 </head>
@@ -140,10 +182,9 @@
 
 <div class="container">
     <h1>OUR WORK<br>TRANSFORMS<br><span class="underline">BUSINESSES</span></h1>
-    <p class="subtitle">Readme : Untuk melakukan report kamu hanya perlu menekan Buka Link, pada page selanjutnya langsung klik kirim dan proses report selesai.
-    Setelah muncul report berhasil silahkan kembali ke page ini dan melakukan hal yang sama pada link report lainnya.</p>
-    <p class="subtitle">Jika masih ragu apakah proses berhasil, silahkan tekan tombol cek. Pada proses kirim akan muncul "Anda sudah melaporkan konten ini.</p>
-    <div class="table-responsive">
+    <p class="subtitle">Readme #1 : Untuk melakukan report kamu hanya perlu menekan Buka Link, pada page selanjutnya langsung klik kirim dan proses report selesai. Setelah muncul report berhasil silahkan kembali ke page ini dan melakukan hal yang sama pada link report lainnya.</p> 
+    <p class="subtitle">#2 Jika masih ragu apakah proses berhasil, silahkan tekan tombol cek. Pada proses kirim akan muncul "Anda sudah melaporkan konten ini."</p>
+    <div id="table-container">
         <table>
             <thead>
                 <tr>
@@ -155,7 +196,7 @@
             </thead>
             <tbody id="table-body">
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 30px;">Memuat data dari Spreadsheet...</td>
+                    <td data-label="Info" colspan="4" style="text-align: center; justify-content: center; padding: 30px;">Memuat data dari Spreadsheet...</td>
                 </tr>
             </tbody>
         </table>
@@ -163,60 +204,55 @@
 </div>
 
 <script>
-    // ID Spreadsheet dari link yang Anda berikan
+    // ID Spreadsheet Anda
     const sheetId = '1RrABTSy3HGQ7lToUsNTiO6r2bhbUd3jMbgBPdXmCt2k';
-    // Gunakan URL export format CSV agar mudah dibaca oleh Javascript
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
-    // Menggunakan library PapaParse untuk mengambil dan membaca file dari Spreadsheet
     Papa.parse(csvUrl, {
         download: true,
-        header: true, // Membaca baris pertama (No., Link, Outlet) sebagai nama kolom
+        header: true, 
         complete: function(results) {
             const data = results.data;
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = ''; // Hapus pesan loading
+            tbody.innerHTML = ''; 
 
             let hasData = false;
 
             data.forEach(row => {
-                // Validasi agar baris yang kosong tidak ikut ter-render (misal jika kolom 'Link' di spreadsheet kosong)
                 if (!row['Link'] || row['Link'].trim() === '') return;
                 
                 hasData = true;
                 const tr = document.createElement('tr');
                 
-                // 1. Buat Kolom No.
+                // 1. Kolom No. dengan atribut data-label untuk mobile
                 const tdNo = document.createElement('td');
+                tdNo.setAttribute('data-label', 'No.');
                 tdNo.textContent = row['No.'] || '-';
                 tr.appendChild(tdNo);
 
-                // 2. Buat Kolom Outlet (berdasarkan gambar spreadsheet Anda yang memiliki kolom "Outlet")
+                // 2. Kolom Outlet
                 const tdOutlet = document.createElement('td');
+                tdOutlet.setAttribute('data-label', 'Outlet');
                 tdOutlet.textContent = row['Outlet'] || 'Unknown';
                 tr.appendChild(tdOutlet);
 
-                // 3. Buat Kolom Status (Kosong/Blank default)
+                // 3. Kolom Status
                 const tdStatus = document.createElement('td');
+                tdStatus.setAttribute('data-label', 'Status');
                 tdStatus.className = 'status-cell';
                 tdStatus.textContent = '-';
                 tr.appendChild(tdStatus);
 
-                // 4. Buat Kolom Action & Button
+                // 4. Kolom Action & Button
                 const tdAction = document.createElement('td');
+                tdAction.setAttribute('data-label', 'Action');
                 const btn = document.createElement('button');
                 btn.textContent = 'Buka Link';
                 
-                // Logika ketika tombol diklik
                 btn.onclick = function() {
-                    // Buka link dari spreadsheet ke tab baru
                     window.open(row['Link'], '_blank');
-
-                    // Ubah text dan warna tombol
                     btn.innerText = 'Cek Report';
                     btn.classList.add('btn-done');
-
-                    // Ubah tulisan pada kolom status menjadi Done
                     tdStatus.innerText = 'Done';
                     tdStatus.classList.add('done');
                 };
@@ -224,21 +260,18 @@
                 tdAction.appendChild(btn);
                 tr.appendChild(tdAction);
 
-                // Masukkan baris ke dalam tabel HTML
                 tbody.appendChild(tr);
             });
 
-            // Jika Spreadsheet terdeteksi kosong
             if (!hasData) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada data ditemukan di Spreadsheet.</td></tr>';
+                tbody.innerHTML = '<tr><td data-label="Info" style="text-align: center; justify-content: center; width: 100%;">Tidak ada data ditemukan di Spreadsheet.</td></tr>';
             }
         },
         error: function(err) {
             console.error("Error loading CSV:", err);
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red;">
-                <b>Gagal memuat data!</b><br><br>
-                Pastikan akses (Share) Spreadsheet Anda sudah diatur ke <b>"Anyone with the link can view"</b> (Siapa saja yang memiliki tautan dapat melihat) agar bisa dibaca oleh sistem web.
+            tbody.innerHTML = `<tr><td data-label="Error" style="text-align: center; justify-content: center; color: red; width: 100%;">
+                <b>Gagal memuat data!</b> Pastikan akses Spreadsheet sudah "Anyone with the link can view".
             </td></tr>`;
         }
     });
